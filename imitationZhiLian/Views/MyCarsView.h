@@ -8,18 +8,14 @@
 
 #import <UIKit/UIKit.h>
 
-@protocol MyCarsViewDelegate <NSObject>
-
--(void)touchEndPoint:(CGPoint )point andWithSelectedTag:(int)tag;
-
-@end
-
+typedef void(^TouchEndSelectedTagBlock)(int tag);
 
 @interface MyCarsView : UIView
 
-@property (nonatomic,weak)id<MyCarsViewDelegate>delegate;
 
-//数据
-@property (nonatomic,strong)NSArray *dataArray;
+- (instancetype)initWithDataArray:(NSArray *)dataArray
+                  withSinglLabelH:(CGFloat)singleH
+                 andTouchEndBlock:(TouchEndSelectedTagBlock)touchEndBlock;
+
 
 @end

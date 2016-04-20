@@ -8,7 +8,11 @@
 
 #import "MyCarsView.h"
 
+//view
 #import "MyLabel.h"
+
+//lib
+#import "Masonry.h"
 
 //颜色
 #define WKFColor(a,b,c,d) [UIColor colorWithRed:(a)/255. green:(b)/255. blue:(c)/255. alpha:(d)]
@@ -18,24 +22,59 @@
 
 @interface MyCarsView ()
 
-@property (nonatomic,assign)CGFloat singleLabelH;
+@property (assign,nonatomic)CGFloat singleLabelH;
 
-@property (nonatomic,assign)int selectTag;
+@property (assign,nonatomic)int selectTag;
+
+@property (strong,nonatomic)NSArray *dataArray;
+
+@property (copy, nonatomic) TouchEndSelectedTagBlock touchEnd;
 
 @end
 
 @implementation MyCarsView
 
--(instancetype)initWithFrame:(CGRect)frame{
+- (instancetype)initWithDataArray:(NSArray *)dataArray withSinglLabelH:(CGFloat)singleH andTouchEndBlock:(TouchEndSelectedTagBlock)touchEndBlock{
   
-  if (self = [super initWithFrame:frame]) {
+  if (self = [super init]) {
     
+    NSAssert(dataArray.count > 0, @"");
+    NSAssert(singleH > 0, @"");
     
-    self.selectTag=-1;
+    _singleLabelH = singleH;
+    _dataArray = dataArray;
+    _selectTag = -1;
+    _touchEnd  = touchEndBlock;
+    [self setupViews];
   }
   return self;
   
 }
+
+- (void)setupViews{
+  
+  for (int i = 0; i<_dataArray.count; i++) {
+    
+    MyLabel *titleLabel = [[MyLabel alloc]init];
+    titleLabel.text = _dataArray[i];
+    titleLabel.font = [UIFont boldSystemFontOfSize:17];
+    titleLabel.textAlignment = NSTextAlignmentCenter;
+    titleLabel.textColor = WKFColor(123, 123, 123, 1);
+    titleLabel.tag=i;
+    [self addSubview:titleLabel];
+    
+    [titleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+      
+      make.height.mas_equalTo(_singleLabelH);
+      make.top.mas_equalTo(i * _singleLabelH);
+      make.right.and.left.mas_equalTo(0);
+      
+    }];
+
+  }
+  
+}
+
 //触摸开始
 -(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
   
@@ -45,11 +84,10 @@
   int tag=beganPoint.y/self.singleLabelH;
   
   [self makeBeganMove:tag andPoint:beganPoint];
-
   
 }
 //触摸滑动
--(void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
   
   UITouch *touch = [touches anyObject];
   CGPoint touchMove = [touch locationInView:self];
@@ -57,12 +95,10 @@
   int tag=touchMove.y/self.singleLabelH;
   
   [self makeMove:tag andPoint:touchMove];
-
   
 }
 //触摸停止
--(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
-  
+- (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
   
   UITouch *touch = [touches anyObject];
   CGPoint touchEnd = [touch locationInView:self];
@@ -73,7 +109,7 @@
 }
 
 //触摸开始的时候的动画
--(void)makeBeganMove:(int)tag andPoint:(CGPoint)point{
+- (void)makeBeganMove:(int)tag andPoint:(CGPoint)point{
 
   for (MyLabel *label in self.subviews) {
     
@@ -89,8 +125,6 @@
       int toValue =(int)-(4-(tag-label.tag))*10 ;
       [self makeLabelMove:label andToValue:toValue andFromValue:label.fromValue];
       
-      
-      
     }
     //下边的四个或者少于四个
     if (label.tag<self.dataArray.count && label.tag<=tag+4 && label.tag>tag) {
@@ -104,8 +138,7 @@
 }
 
 //触摸的时候的动画
--(void)makeMove:(int)tag andPoint:(CGPoint)point{
-  
+- (void)makeMove:(int)tag andPoint:(CGPoint)point{
   
   if (tag==self.selectTag) {
     return;
@@ -115,8 +148,8 @@
   //其余的
   for (MyLabel *label in self.subviews) {
     
-    assert(label.tag>=0);
-    assert(label.tag<self.dataArray.count);
+    NSAssert(label.tag >= 0, @"");;
+    NSAssert(label.tag<self.dataArray.count,@"");
     //最在上面几个 或者没有 回归原位
     if (tag-4>label.tag) {
       
@@ -147,19 +180,17 @@
        [self makeLabelMove:label andToValue:0 andFromValue:label.fromValue];
       
       }
-    
   }
-
 }
 
 //触摸结束的时候的动画
--(void)makeEndMove:(int)tag andPoint:(CGPoint)point{
+- (void)makeEndMove:(int)tag andPoint:(CGPoint)point{
   
-  //通知代理 滑动tableView
-  if ([self.delegate respondsToSelector:@selector(touchEndPoint:andWithSelectedTag:)]) {
-    [_delegate touchEndPoint:point andWithSelectedTag:tag];
+  if (self.touchEnd) {
+    
+    self.touchEnd(tag);
+    
   }
-  
   //所有的回归原位
   for (MyLabel *label in self.subviews) {
     
@@ -169,7 +200,7 @@
   
 }
 
--(void)makeLabelMove:(MyLabel *)label andToValue:(int)toValue andFromValue:(int)fromValue{
+- (void)makeLabelMove:(MyLabel *)label andToValue:(int)toValue andFromValue:(int)fromValue{
   
   CABasicAnimation *anim = [CABasicAnimation animation];
   anim.duration=time;
@@ -193,40 +224,6 @@
     label.textColor = WKFColor(0, 0, 0, 1);//黑色
   }
   
-  
-}
-
-//数据过来之后创建子控件
--(void)setDataArray:(NSArray *)dataArray{
-  
-  _dataArray = dataArray;
-  for (int i = 0; i<_dataArray.count; i++) {
-    
-    MyLabel *titleLabel = [[MyLabel alloc]init];
-    titleLabel.text = _dataArray[i];
-    titleLabel.font = [UIFont boldSystemFontOfSize:17];
-    titleLabel.textAlignment = NSTextAlignmentCenter;
-    titleLabel.textColor = WKFColor(123, 123, 123, 1);
-    titleLabel.tag=i;
-    [self addSubview:titleLabel];
-  }
-  
-}
-//为子控件设置frame
--(void)layoutSubviews{
-  
-  [super layoutSubviews];
-  
-  for (MyLabel *label in self.subviews) {
-    
-    CGFloat labelH=self.frame.size.height/(_dataArray.count);
-    CGFloat labelY=label.tag * labelH;
-    CGFloat labelW=self.frame.size.width;
-    CGFloat labelX=0;
-    label.frame=CGRectMake(labelX, labelY, labelW, labelH);
-    
-  }
-  self.singleLabelH =self.frame.size.height / self.dataArray.count;
   
 }
 

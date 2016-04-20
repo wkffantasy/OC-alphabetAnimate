@@ -8,8 +8,12 @@
 
 #import "MyCarCell.h"
 
+#import "Masonry.h"
+
 //颜色
 #define WKFColor(a,b,c,d) [UIColor colorWithRed:(a)/255. green:(b)/255. blue:(c)/255. alpha:(d)]
+
+#define iconWH  40
 
 @interface MyCarCell ()
 
@@ -26,7 +30,7 @@
 
 @implementation MyCarCell
 
-+(instancetype)cellWithTableView:(UITableView *)tableView{
++ (instancetype)cellWithTableView:(UITableView *)tableView{
   
   static NSString *cellID = @"MyCarCell";
   MyCarCell *cell = [tableView dequeueReusableCellWithIdentifier:cellID];
@@ -37,7 +41,7 @@
   
 }
 
--(void)setModel:(MyCarModel *)model{
+- (void)setModel:(MyCarModel *)model{
   
   _model = model;
   
@@ -46,51 +50,63 @@
   
 }
 
--(instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
   
   if (self = [super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
     
     self.selectionStyle = UITableViewCellSelectionStyleNone;
-    //创建子控件
+  
     [self setupChildViews];
     
   }
   return self;
   
 }
-//创建子控件
--(void)setupChildViews{
+
+- (void)setupChildViews{
   
   UIImageView *iconView = [[UIImageView alloc]init];
   _iconView = iconView;
-  [self addSubview:iconView];
+  [self.contentView addSubview:iconView];
   
   UILabel *nameLabel = [[UILabel alloc]init];
   nameLabel.textAlignment = NSTextAlignmentLeft;
   _nameLabel = nameLabel;
-  [self addSubview:nameLabel];
+  [self.contentView addSubview:nameLabel];
   
   UIView *sepView = [[UIView alloc]init];
   sepView.backgroundColor = WKFColor(200, 200, 200, 1);
   _sepView = sepView;
-  [self addSubview:sepView];
+  [self.contentView addSubview:sepView];
   
+  //layoutSubviews
+  [_iconView mas_makeConstraints:^(MASConstraintMaker *make) {
+    
+    make.updateExisting = YES;
+    make.top.mas_equalTo(5);
+    make.bottom.mas_equalTo(self.contentView.mas_bottom).offset(-5);
+    make.centerY.mas_equalTo(self.contentView.mas_centerY);
+    make.width.and.height.mas_equalTo(iconWH);
+    make.left.mas_equalTo(20);
+    
+  }];
   
-}
--(void)layoutSubviews{
+  [_nameLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+    
+    make.updateExisting = YES;
+    make.centerY.mas_equalTo(self.contentView.mas_centerY);
+    make.left.mas_equalTo(self.iconView.mas_right).offset(20);
+    
+  }];
   
-  [super layoutSubviews];
-  
-  CGFloat width = [UIScreen mainScreen].bounds.size.width;
-  
-  CGFloat iconWH =40;
-  CGFloat iconY  =(self.frame.size.height-iconWH)/2;
-  CGFloat iconX  =20;
-  _iconView.frame=CGRectMake(iconX, iconY, iconWH, iconWH);
-  
-  _nameLabel.frame=CGRectMake(CGRectGetMaxX(_iconView.frame)+20, 0, 200, self.frame.size.height);
-  
-  _sepView.frame=CGRectMake(CGRectGetMaxX(_iconView.frame)+20, self.frame.size.height-0.5,width-CGRectGetMaxX(_iconView.frame)-20-20, 0.5);
+  [_sepView mas_makeConstraints:^(MASConstraintMaker *make) {
+    
+    make.updateExisting = YES;
+    make.bottom.and.right.mas_equalTo(0);
+    make.height.mas_equalTo(0);
+    make.left.mas_equalTo(_nameLabel.mas_left);
+    
+  }];
   
   
 }
